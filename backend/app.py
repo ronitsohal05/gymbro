@@ -1,6 +1,6 @@
 from flask import Flask
 from flask_cors import CORS
-from routes.chat import chat_bp
+from routes.gymbro import gymbro_bp
 
 def create_app():
 
@@ -8,7 +8,7 @@ def create_app():
     CORS(app)
 
 
-    app.register_blueprint(chat_bp, url_prefix="/chat")
+    app.register_blueprint(gymbro_bp, url_prefix="/gymbro")
 
 
     return app
