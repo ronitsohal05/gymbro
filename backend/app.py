@@ -1,12 +1,13 @@
 from flask import Flask
 from flask_cors import CORS
 
-app = Flask(__name__)
-CORS(app)
+def create_app():
 
-@app.route("/pong", methods = ['GET'])
-def pong():
-    return { "pong": True }
+    app = Flask(__name__)
+    CORS(app)
 
-if __name__ == "__main__":
-    app.run(debug=True)
+    @app.route("/pong", methods = ['GET'])
+    def pong():
+        return { "pong": True }
+
+    return app
