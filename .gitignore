@@ -1,11 +1,12 @@
 # backend
 __pycache__
 *.pyc
-
 .env
 venv
 
 # frontend
+.env.development
+.env.staging
 node_modules
 .eslintcache
 
