@@ -1,13 +1,14 @@
 from flask import Flask
 from flask_cors import CORS
+from routes.chat import chat_bp
 
 def create_app():
 
     app = Flask(__name__)
     CORS(app)
 
-    @app.route("/pong", methods = ['GET'])
-    def pong():
-        return { "pong": True }
+
+    app.register_blueprint(chat_bp, url_prefix="/chat")
+
 
     return app
