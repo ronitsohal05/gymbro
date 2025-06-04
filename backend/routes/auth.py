@@ -50,9 +50,7 @@ def signup():
         "weight": weight,
         "height": height,
         "goal": goal,
-        "conversation_message_ids": [],
-        "nutrition_message_ids": [],
-        "workout_message_ids": [],
+        "message_threads" : []
     })
 
     return jsonify({"msg": "User created"}), 201

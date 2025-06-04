@@ -9,3 +9,9 @@ db = mongo_client.get_default_database()
 
 def get_user_collection():
     return db["users"]
+
+def get_meals_collection():
+    return db["users"]
+
+def get_workouts_collection():
+    return db["users"]
