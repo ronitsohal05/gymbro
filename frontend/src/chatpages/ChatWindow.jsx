@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { chat } from "./services/api";        // adjust path if needed
+import { chat } from "../services/api";        // adjust path if needed
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 

@@ -1,29 +1,36 @@
-import ChatWindow from "./ChatWindow";
+import { useContext } from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import SignupPage from "./authpages/SignupPage";
+import LoginPage from "./authpages/LoginPage";
+import ChatPage from "./chatpages/ChatPage";
+import { AuthContext } from "./contexts/AuthContext";
 
 function App() {
+  const { isAuthenticated } = useContext(AuthContext);
+
   return (
-    <div className="flex flex-col h-screen bg-gray-100">
-      {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-2xl mx-auto py-4 px-6">
-          <h1 className="text-2xl font-bold text-gray-800">
-            GymBro
-          </h1>
-        </div>
-      </header>
-
-      {/* Main Chat Area */}
-      <main className="flex-1 overflow-hidden">
-        <ChatWindow />
-      </main>
-
-      {/* Footer (optional) */}
-      <footer className="bg-white">
-        <div className="max-w-2xl mx-auto py-2 px-6 text-center text-gray-500 text-sm">
-          © 2025 GymBro. All rights reserved.
-        </div>
-      </footer>
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/signup" element={<SignupPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route
+          path="/chat"
+          element={isAuthenticated ? <ChatPage /> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/"
+          element={<Navigate to={isAuthenticated ? "/chat" : "/login"} replace />}
+        />
+        <Route
+          path="*"
+          element={
+            <div className="flex items-center justify-center h-screen">
+              <h2 className="text-2xl">404: Page Not Found</h2>
+            </div>
+          }
+        />
+      </Routes>
+    </Router>
   );
 }
 

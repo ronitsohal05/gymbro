@@ -2,6 +2,7 @@ import os
 from flask import Blueprint, request, jsonify
 from openai import OpenAI
 from dotenv import load_dotenv
+from flask_jwt_extended import jwt_required
 
 load_dotenv()
 
@@ -12,6 +13,7 @@ client = OpenAI(api_key=API_KEY)
 gymbro_bp = Blueprint("gymbro", __name__)
 
 @gymbro_bp.route("/chat", methods=["POST"])
+@jwt_required()
 def chat():
     """
     Expects a JSON: {"message": "<user's text>"}
