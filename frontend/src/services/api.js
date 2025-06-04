@@ -54,9 +54,9 @@ const refreshAuthLogic = async (failedRequest) => {
 
 createAuthRefreshInterceptor(client, refreshAuthLogic);
 
-export async function signup(username, password, firstName, lastName, gender, age, weight, height) {
+export async function signup(username, password, firstName, lastName, gender, age, weight, height, goal) {
   var name = firstName + " " + lastName;
-  return client.post("/auth/signup", { username, password, name, gender, age, weight , height});
+  return client.post("/auth/signup", { username, password, name, gender, age, weight , height, goal});
 }
 
 export async function login(username, password) {

@@ -25,11 +25,12 @@ def signup():
     data = request.get_json() or {}
     username = data.get("username", "").strip().lower()
     password = data.get("password", "")
-    name = data.get("name", "")
-    gender = data.get("gender", " ")
-    height = data.get("height", "")
-    age = data.get("age", "")
-    weight = data.get("weight", "")
+    name = data.get("name", "").strip().lower()
+    gender = data.get("gender", " ").strip().lower()
+    height = data.get("height", "").strip()
+    age = data.get("age", "").strip()
+    weight = data.get("weight", "").strip()
+    goal = data.get("goal", "").strip().lower()
 
     if not username or not password:
         return jsonify({"error": "username and password required"}), 400
@@ -48,6 +49,7 @@ def signup():
         "age": age,
         "weight": weight,
         "height": height,
+        "goal": goal,
         "conversation_message_ids": [],
         "nutrition_message_ids": [],
         "workout_message_ids": [],

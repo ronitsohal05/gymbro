@@ -10,6 +10,7 @@ export default function SignupPage() {
   const [gender, setGender] = useState("");
   const [height, setHeight] = useState("");
   const [age, setAge] = useState("");
+  const [goal, setGoal] = useState("");
   const [weight, setWeight] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -19,7 +20,7 @@ export default function SignupPage() {
     setError("");
 
     try {
-      await signup(username, password, firstName, lastName, gender, age, weight, height);
+      await signup(username, password, firstName, lastName, gender, age, weight, height, goal);
       // On success, redirect to login
       navigate("/login");
     } catch (err) {
@@ -51,6 +52,17 @@ export default function SignupPage() {
             required
             value={username}
             onChange={(e) => setUsername(e.target.value)}
+            className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+        </label>
+
+        <label className="block mb-6">
+          <span className="text-gray-700">Password</span>
+          <input
+            type="password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
         </label>
@@ -121,13 +133,13 @@ export default function SignupPage() {
           />
         </label>
 
-        <label className="block mb-6">
-          <span className="text-gray-700">Password</span>
+        <label className="block mb-4">
+          <span className="text-gray-700">Goal</span>
           <input
-            type="password"
+            type="text"
             required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            value={goal}
+            onChange={(e) => setGoal(e.target.value)}
             className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
         </label>
