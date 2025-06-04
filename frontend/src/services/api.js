@@ -2,6 +2,7 @@ import axios from "axios";
 import createAuthRefreshInterceptor from "axios-auth-refresh";
 import { API_BASE } from "../config";
 
+
 const client = axios.create({
     baseURL: API_BASE
 });
@@ -29,7 +30,7 @@ const refreshAuthLogic = async (failedRequest) => {
 
   try {
     const response = await axios.post(
-      `${API_BASE}/api/auth/refresh`,
+      `${API_BASE}/auth/refresh`,
       {},
       {
         headers: { Authorization: `Bearer ${refreshToken}` },
@@ -53,8 +54,9 @@ const refreshAuthLogic = async (failedRequest) => {
 
 createAuthRefreshInterceptor(client, refreshAuthLogic);
 
-export async function signup(username, password) {
-  return client.post("/auth/signup", { username, password });
+export async function signup(username, password, firstName, lastName, gender, age, weight, height) {
+  var name = firstName + " " + lastName;
+  return client.post("/auth/signup", { username, password, name, gender, age, weight , height});
 }
 
 export async function login(username, password) {

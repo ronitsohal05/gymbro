@@ -25,6 +25,11 @@ def signup():
     data = request.get_json() or {}
     username = data.get("username", "").strip().lower()
     password = data.get("password", "")
+    name = data.get("name", "")
+    gender = data.get("gender", " ")
+    height = data.get("height", "")
+    age = data.get("age", "")
+    weight = data.get("weight", "")
 
     if not username or not password:
         return jsonify({"error": "username and password required"}), 400
@@ -37,7 +42,15 @@ def signup():
     pw_hash = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
     users.insert_one({
         "username": username,
-        "password_hash": pw_hash
+        "password_hash": pw_hash,
+        "name": name,
+        "gender": gender,
+        "age": age,
+        "weight": weight,
+        "height": height,
+        "conversation_message_ids": [],
+        "nutrition_message_ids": [],
+        "workout_message_ids": [],
     })
 
     return jsonify({"msg": "User created"}), 201
