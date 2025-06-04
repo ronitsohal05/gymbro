@@ -2,7 +2,7 @@ import axios from "axios";
 import createAuthRefreshInterceptor from "axios-auth-refresh";
 import { API_BASE } from "../config";
 
-
+//Auth Enpoints
 const client = axios.create({
     baseURL: API_BASE
 });
@@ -69,8 +69,19 @@ export async function logout() {
   window.location.href = "/login";
 }
 
-export function chat(m) {
-    return client.post("/gymbro/chat", { message: m })
+
+//Chat endpoints
+export async function chat(m) {
+    return client.post("/gymbro/chat", { message: m });
+}
+
+//Logging endpoitns
+export async function logMeal(payload) {
+  return client.post("/log/meal", payload);
+}
+
+export async function logWorkout(d, a) {
+  return client.post("/log/workout", {date: d, activities: a});
 }
 
 export default client;

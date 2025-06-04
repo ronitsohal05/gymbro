@@ -5,11 +5,10 @@ from config import Config
 from services.db import get_user_collection
 from routes.auth import auth_bp
 from routes.gymbro import gymbro_bp
-from flask_jwt_extended import (
-    JWTManager,
-    jwt_required,
-    get_jwt_identity,
-)
+from routes.profile import profile_bp
+from routes.logging import logging_bp
+from flask_jwt_extended import JWTManager
+
 from openai import OpenAI
 from datetime import datetime, timedelta
 def create_app():
@@ -27,6 +26,8 @@ def create_app():
 
     app.register_blueprint(gymbro_bp, url_prefix="/gymbro")
     app.register_blueprint(auth_bp, url_prefix="/auth")
+    app.register_blueprint(profile_bp, url_prefix="/profile")
+    app.register_blueprint(logging_bp, url_prefix="/log")
 
 
 

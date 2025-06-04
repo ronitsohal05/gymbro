@@ -18,7 +18,7 @@ users = get_user_collection()
 @jwt_required()
 def chat():
     """
-    Expects a JSON: {"message": "<user's text>"}
+    Expects a JSON: {"message": "<user's text>", "thread": "previous}
     Returns a JSON: {"reply": "assistant's respone>" }
     """
     data = request.get_json() or {}

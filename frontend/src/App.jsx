@@ -3,6 +3,9 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import SignupPage from "./authpages/SignupPage";
 import LoginPage from "./authpages/LoginPage";
 import ChatPage from "./chatpages/ChatPage";
+import LogWorkoutPage from "./logpages/LogWorkoutPage";
+import LogMealPage from "./logpages/LogMealPage"; // create this later
+import Navbar from "./Navbar";
 import { AuthContext } from "./contexts/AuthContext";
 
 function App() {
@@ -10,12 +13,21 @@ function App() {
 
   return (
     <Router>
+      <Navbar />
       <Routes>
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route
           path="/chat"
           element={isAuthenticated ? <ChatPage /> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/log-workout"
+          element={isAuthenticated ? <LogWorkoutPage /> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/log-meal"
+          element={isAuthenticated ? <LogMealPage /> : <Navigate to="/login" replace />}
         />
         <Route
           path="/"
