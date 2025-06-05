@@ -17,6 +17,18 @@ export default function DashboardPage() {
     fetchData();
   }, []);
 
+	useEffect(() => {
+  async function fetchHighlights() {
+    try {
+      const res = await getLogsByDate();
+      setCalendarHighlights(res.data);
+    } catch (err) {
+      console.error("Failed to fetch calendar highlights:", err);
+    }
+  }
+  fetchHighlights();
+}, []);
+
   useEffect(() => {
     async function fetchLogs() {
       const isoDate = selectedDate.toISOString().split("T")[0];

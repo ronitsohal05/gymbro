@@ -44,11 +44,11 @@ def log_workout():
     workouts.insert_one({ "username": username, "workout_date": date, "workout_type": type, "workout_activities": activities, "notes": notes })
     return jsonify({ "msg": "Workout logged successfully" }), 201
 
-@logging_bp.route("/by-date/<date>", methods=["GET"])
+@logging_bp.route("/by-date", methods=["GET"])
 @jwt_required()
-def logs_by_date(date):
+def logs_by_date():
     username = get_jwt_identity()
-    date_str = date
+    date_str = request.args.get("date")
 
     if date_str:
         # Specific date: return meals and workouts
@@ -58,7 +58,6 @@ def logs_by_date(date):
         except:
             return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
         
-        print(start, end)
 
         meals_logged = list(meals.find({
             "username": username,
@@ -70,7 +69,6 @@ def logs_by_date(date):
             "workout_date": {"$gte": start, "$lte": end}
         }, {"_id": 0}))
 
-        print(meals_logged)
         # Flatten for frontend
         formatted_meals = [
             { "category": m.get("meal_type"), "items": m.get("meal_items", []) }
@@ -84,19 +82,21 @@ def logs_by_date(date):
 
     else:
         # No date: return highlights for calendar
-        all_meals = meals.find({"username": username}, {"date": 1})
-        all_workouts = workouts.find({"username": username}, {"date": 1})
+        all_meals = meals.find({"username": username}, {"meal_date": 1})
+        all_workouts = workouts.find({"username": username}, {"workout_date": 1})
+
+        print(all_meals, all_workouts)
 
         highlights = {}
 
         for m in all_meals:
-            key = to_date_string(m["date"])
+            key = to_date_string(m["meal_date"])
             if key not in highlights:
                 highlights[key] = {}
             highlights[key]["meals"] = True
 
         for w in all_workouts:
-            key = to_date_string(w["date"])
+            key = to_date_string(w["workout_date"])
             if key not in highlights:
                 highlights[key] = {}
             highlights[key]["workouts"] = True

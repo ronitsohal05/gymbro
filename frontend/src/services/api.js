@@ -84,9 +84,11 @@ export async function logWorkout(payload) {
   return client.post("/log/workout", payload);
 }
 
-export async function getLogsByDate(date) {
-  const url = `/log/by-date/${date}`;
+export async function getLogsByDate(date = null) {
+  
+  const url = date ? `/log/by-date?date=${date}` : `/log/by-date`;
   return client.get(url);
+
 }
 
 
