@@ -1,12 +1,15 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "./contexts/AuthContext";
+import { removeLastMessageID, logout } from "./services/api";
 
 export default function Navbar() {
-  const { isAuthenticated, logout } = useContext(AuthContext);
+  const { isAuthenticated, setAuthenticated } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleLogout = () => {
+    removeLastMessageID();
+    setAuthenticated(false);
     logout();
     navigate("/login");
   };

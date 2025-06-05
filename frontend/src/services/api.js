@@ -72,7 +72,11 @@ export async function logout() {
 
 //Chat endpoints
 export async function chat(m) {
-    return client.post("/gymbro/chat", { message: m });
+  return client.post("/gymbro/chat", { message: m });
+}
+
+export async function removeLastMessageID() {
+  return client.post("/gymbro/reset")
 }
 
 //Logging endpoitns

@@ -37,20 +37,37 @@ def chat():
     if not user:
         return jsonify({"error": "User not found"}), 404
     
-    classification = classify_message(user_message)
+    classification = classify_message(user, user_message)
     
-    if classification == "nutrition":
-        reply = handle_nutrition(user, user_message)
-    elif classification == "workout":
-        reply = handle_workout(user, user_message)
-    else:
-        reply = general(user_message)
+    try:
+        if classification == "nutrition":
+            response = handle_nutrition(user, user_message)
+        elif classification == "workout":
+            response = handle_workout(user, user_message)
+        else:
+            response = general(user, user_message)
 
-    return jsonify({ "reply": reply })
+        reply = response.output_text
+
+        # Update last message id
+        users.update_one(
+            {"username": username},
+            {"$set": {
+                "last_message_id": response.id
+            }}
+        )
+
+        return jsonify({ "reply": reply })
+
+    except RuntimeError as err:
+        return jsonify({ "error": str(err) }), 500
     
 
 
-def classify_message(message):
+def classify_message(user, message):
+
+    last_message_id = user.get("last_message_id", "")
+
     try:
         classification_prompt = f"""
         Classify the following message into one of the categories: "nutrition", "workout", or "other".
@@ -58,19 +75,29 @@ def classify_message(message):
         Respond with only the category name.
         """.strip()
 
-        response = client.responses.create(
-            model="gpt-4o-mini",
-            input=message,
-            instructions=classification_prompt,
-            store=True
-        )
+        if last_message_id == "":
+            response = client.responses.create(
+                model="gpt-4o-mini",
+                input=message,
+                instructions=classification_prompt,
+                store=True
+            )
+
+        else:
+            response = client.responses.create(
+                model="gpt-4o-mini",
+                input=message,
+                instructions=classification_prompt,
+                previous_response_id=last_message_id,
+                store=True
+            )
 
         return response.output_text
 
     except Exception as e:
-        return jsonify({"error": "OpenAI Classification request failed"}), 500
+        raise RuntimeError("OpenAI request failed") from e
     
-def handle_nutrition(user):
+def handle_nutrition(user, message):
 
     username = user.get("username", "")
     name = user.get("name", "")
@@ -78,6 +105,7 @@ def handle_nutrition(user):
     weight = user.get("weight", "")
     height = user.get("height", "")
     goal = user.get("goal", "")
+    last_message_id = user.get("last_message_id", "")
 
     seven_days_ago = datetime.now() - timedelta(days=7)
 
@@ -100,6 +128,48 @@ def handle_nutrition(user):
     else:
         meal_logs = "- No meals logged.\n"
 
+
+    system_instructions = f"""
+    You are GymBro, a personal nutrition coach for fitness-oriented users.
+
+    The user is:
+    - Name: {name}
+    - Age: {age}
+    - Weight: {weight} lbs
+    - Height: {height} inches
+    - Goal: {goal}
+
+    Meal logs from the past 7 days:
+    {meal_logs}
+
+    Based on what the user has recently eaten, provide personalized nutrition advice.
+    Recommend a meal that supports their goal, avoiding repetition and ensuring nutritional variety.
+    """.strip()
+
+    try:
+        if last_message_id == "":
+            response = client.responses.create(
+                model="gpt-4o-mini",
+                input=message,
+                instructions=system_instructions,
+                store=True
+            )
+
+        else:
+            response = client.responses.create(
+                model="gpt-4o-mini",
+                input=message,
+                instructions=system_instructions,
+                previous_response_id=last_message_id,
+                store=True
+            )
+
+        return response
+    
+
+    except Exception as e:
+        raise RuntimeError("OpenAI request failed") from e
+
 def handle_workout(user, message):
 
     username = user.get("username", "")
@@ -108,6 +178,7 @@ def handle_workout(user, message):
     weight = user.get("weight", "")
     height = user.get("height", "")
     goal = user.get("goal", "")
+    last_message_id = user.get("last_message_id", "")
 
     seven_days_ago = datetime.now() - timedelta(days=7)
 
@@ -138,25 +209,98 @@ def handle_workout(user, message):
     else:
         workout_logs = "- No workouts logged.\n"
 
-def general(message):
+        
+
+    system_instructions = f"""
+    You are GymBro, a personal fitness coach and workout planner.
+
+    The user is:
+    - Name: {name}
+    - Age: {age}
+    - Weight: {weight} lbs
+    - Height: {height} inches
+    - Goal: {goal}
+
+    Here is their workout history from the past 7 days:
+    {workout_logs}
+
+    Your responsibilities:
+    - If the user is seeking advice, highlight ways they can improve their training—this could include frequency, variety, form, or balancing different muscle groups.
+    - If they are asking for a new workout:
+        - Suggest a well-structured session tailored to their goal.
+        - Avoid overloading muscle groups they’ve trained in the past 1–2 days.
+        - Promote a balanced routine (e.g., push/pull, upper/lower body, cardio/strength).
+        - Be specific with exercises, sets, reps, or duration.
+    """.strip()
+
+    try:
+        if last_message_id == "":
+            response = client.responses.create(
+                model="gpt-4o-mini",
+                input=message,
+                instructions=system_instructions,
+                store=True
+            )
+
+        else:
+            response = client.responses.create(
+                model="gpt-4o-mini",
+                input=message,
+                instructions=system_instructions,
+                previous_response_id=last_message_id,
+                store=True
+            )
+
+        return response
+    
+
+    except Exception as e:
+        raise RuntimeError("OpenAI request failed") from e
+
+def general(user, message):
+
+    last_message_id = user.get("last_message_id", "")
+
+
     system_instructions = f"""
     You are GymBro, an AI personal trainer and nutritionist.
     """.strip()
 
     try:
-        response = client.responses.create(
-            model="gpt-4o-mini",
-            input=message,
-            instructions=system_instructions,
-            store=True
-        )
+        if last_message_id == "":
+            response = client.responses.create(
+                model="gpt-4o-mini",
+                input=message,
+                instructions=system_instructions,
+                store=True
+            )
 
+        else:
+            response = client.responses.create(
+                model="gpt-4o-mini",
+                input=message,
+                instructions=system_instructions,
+                previous_response_id=last_message_id,
+                store=True
+            )
 
-        output = response.output_text
-
-        return output
+        return response
     
 
     except Exception as e:
-        return jsonify({"error": "OpenAI request failed"}), 50
+        raise RuntimeError("OpenAI request failed") from e
+
+
+
+@gymbro_bp.route("/reset", methods=["POST"])
+@jwt_required()
+def reset_gymbro():
+    username = get_jwt_identity()
+    users.update_one(
+        {"username": username},
+        {"$unset": {
+            "last_message_id": ""
+        }}
+    )
+    return jsonify({"message": "Conversation reset."})
 
