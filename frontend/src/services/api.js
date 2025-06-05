@@ -85,11 +85,12 @@ export async function logWorkout(payload) {
 }
 
 export async function getLogsByDate(date) {
-  return client.get("/log/by-date", { date });
+  const url = `/log/by-date/${date}`;
+  return client.get(url);
 }
 
 
-//Profile endpoints
+//profile endpoints
 export async function getUserStats() {
   return client.get("/profile/stats");
 }

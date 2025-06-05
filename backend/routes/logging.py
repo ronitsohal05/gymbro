@@ -49,7 +49,6 @@ def log_workout():
 def logs_by_date(date):
     username = get_jwt_identity()
     date_str = date
-    print(date)
 
     if date_str:
         # Specific date: return meals and workouts
@@ -58,6 +57,8 @@ def logs_by_date(date):
             end = start.replace(hour=23, minute=59, second=59)
         except:
             return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
+        
+        print(start, end)
 
         meals_logged = list(meals.find({
             "username": username,
@@ -69,13 +70,14 @@ def logs_by_date(date):
             "workout_date": {"$gte": start, "$lte": end}
         }, {"_id": 0}))
 
+        print(meals_logged)
         # Flatten for frontend
         formatted_meals = [
-            { "category": m.get("category", "Meal"), "items": m.get("items", []) }
+            { "category": m.get("meal_type"), "items": m.get("meal_items", []) }
             for m in meals_logged
         ]
         formatted_workouts = [
-            ex for w in workouts_logged for ex in w.get("activities", [])
+            ex for w in workouts_logged for ex in w.get("workout_activities", [])
         ]
 
         return jsonify({ "meals": formatted_meals, "workouts": formatted_workouts })

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import Calendar from "react-calendar";
 import 'react-calendar/dist/Calendar.css';
-import { getUserStats, getLogsByDate } from "../services/api"; // make sure these exist
+import { getUserStats, getLogsByDate } from "../services/api";
 
 export default function DashboardPage() {
   const [stats, setStats] = useState(null);
@@ -13,9 +13,6 @@ export default function DashboardPage() {
     async function fetchData() {
       const userData = await getUserStats();
       setStats(userData.data);
-			console.log(userData);
-      const highlights = await getLogsByDate(selectedDate);
-      setCalendarHighlights(highlights);
     }
     fetchData();
   }, []);
@@ -23,8 +20,8 @@ export default function DashboardPage() {
   useEffect(() => {
     async function fetchLogs() {
       const isoDate = selectedDate.toISOString().split("T")[0];
-      const data = await getLogsByDate(isoDate);
-      setLogs(data);
+      const response = await getLogsByDate(isoDate);
+      setLogs(response.data);
     }
     fetchLogs();
   }, [selectedDate]);
