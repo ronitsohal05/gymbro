@@ -80,8 +80,8 @@ export async function logMeal(payload) {
   return client.post("/log/meal", payload);
 }
 
-export async function logWorkout(d, a) {
-  return client.post("/log/workout", {date: d, activities: a});
+export async function logWorkout(payload) {
+  return client.post("/log/workout", payload);
 }
 
 export default client;

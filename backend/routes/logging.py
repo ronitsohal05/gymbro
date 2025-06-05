@@ -31,10 +31,12 @@ def log_workout():
     username = get_jwt_identity()
     print(data)
     date = convertISOtoDateTimeObject(data.get("date"))
-    activities = data.get("activities", [])
+    type = data.get("type")
+    activities = data.get("activities")
+    notes = data.get("notes")
 
     if not date or not activities:
         return jsonify({"error": "Date and activities are required"}), 400
 
-    workouts.insert_one({ "username": username, "date": date, "activities": activities })
+    workouts.insert_one({ "username": username, "date": date, "type": type, "activities": activities, "notes": notes })
     return jsonify({ "msg": "Workout logged successfully" }), 201
