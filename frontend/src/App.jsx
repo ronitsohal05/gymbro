@@ -4,7 +4,8 @@ import SignupPage from "./authpages/SignupPage";
 import LoginPage from "./authpages/LoginPage";
 import ChatPage from "./chatpages/ChatPage";
 import LogWorkoutPage from "./logpages/LogWorkoutPage";
-import LogMealPage from "./logpages/LogMealPage"; // create this later
+import LogMealPage from "./logpages/LogMealPage";
+import DashboardPage from "./userpages/DashboardPage";
 import Navbar from "./Navbar";
 import { AuthContext } from "./contexts/AuthContext";
 
@@ -17,6 +18,7 @@ function App() {
       <Routes>
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/login" element={<LoginPage />} />
+        
         <Route
           path="/chat"
           element={isAuthenticated ? <ChatPage /> : <Navigate to="/login" replace />}
@@ -30,8 +32,13 @@ function App() {
           element={isAuthenticated ? <LogMealPage /> : <Navigate to="/login" replace />}
         />
         <Route
+          path="/dashboard"
+          element={isAuthenticated ? <DashboardPage /> : <Navigate to="/login" replace />}
+        />
+        
+        <Route
           path="/"
-          element={<Navigate to={isAuthenticated ? "/chat" : "/login"} replace />}
+          element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />}
         />
         <Route
           path="*"

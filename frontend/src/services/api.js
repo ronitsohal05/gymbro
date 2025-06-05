@@ -84,4 +84,14 @@ export async function logWorkout(payload) {
   return client.post("/log/workout", payload);
 }
 
+export async function getLogsByDate(date) {
+  return client.get("/log/by-date", { date });
+}
+
+
+//Profile endpoints
+export async function getUserStats() {
+  return client.get("/profile/stats");
+}
+
 export default client;

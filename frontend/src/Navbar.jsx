@@ -17,6 +17,9 @@ export default function Navbar() {
     <nav className="bg-blue-600 text-white px-6 py-3 flex justify-between items-center">
       <div className="text-lg font-bold">GymBro</div>
       <div className="space-x-4">
+        <Link to="/dashboard" className="hover:underline">
+          Dashboard
+        </Link>
         <Link to="/chat" className="hover:underline">
           Chat
         </Link>
