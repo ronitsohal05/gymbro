@@ -7,6 +7,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from services.db import get_user_collection, get_meal_collection, get_workout_collection
 from datetime import datetime, timedelta
 
+
 gymbro_bp = Blueprint("gymbro", __name__)
 
 load_dotenv()
@@ -47,18 +48,20 @@ def chat():
             response = handle_nutrition(user, user_message)
         elif classification == "workout":
             response = handle_workout(user, user_message)
+        elif classification == "log meal/workout":
+            response = handle_logging_request(user, user_message)
         else:
             response = general(user, user_message)
 
-        reply = response.output_text
-
-        # Update last message id
+        
         users.update_one(
             {"username": username},
             {"$set": {
                 "last_message_id": response.id
             }}
         )
+
+        reply = response.output_text
 
         return jsonify({ "reply": reply })
 
@@ -74,7 +77,7 @@ def classify_message(user, message):
     classification_tool = [{
         "type": "function",
         "name": "user_message_classification",
-        "description": "Classifies a user message into one of the categories: workout, nutrition, action, or other.",
+        "description": "Classifies a user message into one of the categories: workout, nutrition, log meal/workout, or other.",
         "parameters": {
             "type": "object",
             "properties": {
@@ -85,7 +88,7 @@ def classify_message(user, message):
                 "classification": {
                     "type": "string",
                     "description": "The classification of the user message.",
-                    "enum": ["workout", "nutrition", "action", "other"]
+                    "enum": ["workout", "nutrition", "log meal/workout", "other"]
                 }
             },
             "required": ["user_message", "classification"],
@@ -98,7 +101,7 @@ def classify_message(user, message):
 
     try:
         classification_prompt = f"""
-        Classify the following message into one of the categories: "nutrition", "workout", or "other".
+        Classify the following message into one of the categories: "nutrition", "workout", "log gym/workout" or "other".
 
         Respond with only the category name.
         """.strip()
@@ -295,6 +298,174 @@ def handle_workout(user, message):
     except Exception as e:
         raise RuntimeError("OpenAI request failed") from e
 
+def handle_logging_request(user, message):
+    pending_log = user.get("pending_log")
+
+    if pending_log:
+        if message.lower() in ["yes", "confirm", "log it", "submit"]:
+            log_type = pending_log.get("type")
+            log_data = pending_log.get("data")
+
+            if log_type == "meal":
+                return log_meal_from_pending(user, log_data)
+            elif log_type == "workout":
+                return log_workout_from_pending(user, log_data)
+        else:
+            return regenerate_proposal(user, message)
+
+    return handle_new_logging_message(user, message)
+
+def handle_new_logging_message(user, message):
+
+    current_date = datetime.now()
+    tools = [{
+        "type": "function",
+        "name": "log_user_meal",
+        "description": "Logs the user's meal based on what they report eating.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "meal_date": {
+                    "type": "string",
+                    "description": f"The date the meal was eaten, in ISO format (e.g. 2025-06-05T08:00:00Z). The date rigt now is{current_date}."
+                },
+                "meal_type": {
+                    "type": "string",
+                    "description": "Type of meal (e.g., breakfast, lunch, dinner, snack)."
+                },
+                "meal_items": {
+                    "type": "array",
+                    "description": "List of foods eaten in the meal.",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            },
+            "required": ["meal_date", "meal_type", "meal_items"],
+            "additionalProperties": False
+        }
+    },{
+        "type": "function",
+        "name": "log_user_workout",
+        "description": "Logs a workout session to the user's account based on what exercises they did.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "workout_date": {
+                    "type": "string",
+                    "description": "The date and time the workout happened, in ISO 8601 format (e.g. 2025-06-05T17:00:00Z). The date rigt now is{current_date}."
+                },
+                "workout_type": {
+                    "type": "string",
+                    "description": "A short description of the workout (e.g., push day, leg day, cardio)."
+                },
+                "workout_activities": {
+                    "type": "array",
+                    "description": "List of exercises performed with details.",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Name of the exercise, e.g., push-ups"
+                            },
+                            "mode": {
+                                "type": "string",
+                                "description": "Tracking method used for the exercise.",
+                                "enum": ["reps", "time"]
+                            },
+                            "sets": {
+                                "type": "integer",
+                                "description": "Number of sets (if mode is 'reps')"
+                            },
+                            "reps": {
+                                "type": "integer",
+                                "description": "Number of reps per set (if mode is 'reps')"
+                            },
+                            "duration": {
+                                "type": "number",
+                                "description": "Duration in minutes (if mode is 'time')"
+                            }
+                        },
+                        "required": ["name", "mode"],
+                        "additionalProperties": False
+                    }
+                },
+                "notes": {
+                    "type": "string",
+                    "description": "Optional notes about the workout"
+                }
+            },
+            "required": ["workout_date", "workout_activities", "workout_type"],
+            "additionalProperties": False
+        }
+    }]
+
+    system_instructions = """
+        You are GymBro, an AI fitness assistant. 
+        Parse the user's message and generate a structured log proposal using one of the available functions, but DO NOT actually log it. 
+        Instead, present a summary and ask for confirmation.
+    """
+
+    response = client.responses.create(
+        model="gpt-4o-mini",
+        input=message,
+        tools=tools,
+        tool_choice="required",
+        instructions=system_instructions
+    )
+
+
+    tool_call = response.output[0]
+    args = json.loads(tool_call.arguments)
+    function_name = tool_call.name
+    log_type = "meal" if function_name == "log_user_meal" else "workout"
+
+    users.update_one({"username": user["username"]}, {
+        "$set": {
+            "pending_log": {
+                "type": log_type,
+                "data": args
+            }
+        }
+    })
+
+    system_instructions = """
+        You are GymBro, an AI fitness assistant. A user has just sent a message that likely describes either a meal they ate or a workout they completed.
+
+        Your task is to:
+        1. Parse their message.
+        2. Use ONE of the available tools to generate a structured **log proposal** — either for a meal or a workout.
+        3. DO NOT confirm that anything has been logged yet.
+
+        Instead:
+        - Summarize the proposed log to the user in natural language.
+        - Ask them to confirm it (e.g., “Does this look right? Type 'yes' to confirm or send changes.”).
+        - Wait for their confirmation before proceeding.
+
+        DO NOT say that anything has been saved or logged at this point
+    """
+
+    summary = summarize_log_proposal(log_type, args)
+
+    input_messages = []
+    input_messages.append(tool_call)
+    input_messages.append({
+        "type": "function_call_output",
+        "call_id": tool_call.call_id,
+        "output": summary
+    })
+
+    confirmation_response = client.responses.create(
+        model="gpt-4o-mini",
+        input=input_messages,
+        tools=tools,
+        instructions=system_instructions
+    )
+    
+
+    return confirmation_response
+
 def general(user, message):
 
     last_message_id = user.get("last_message_id", "")
@@ -327,6 +498,78 @@ def general(user, message):
 
     except Exception as e:
         raise RuntimeError("OpenAI request failed") from e
+    
+def regenerate_proposal(user, new_message):
+    return handle_new_logging_message(user, new_message)
+
+def convertISOtoDateTimeObject(iso_string):
+    return datetime.fromisoformat(iso_string.replace("Z", "+00:00"))
+
+def summarize_log_proposal(log_type, args):
+    if log_type == "meal":
+        return f"You had {', '.join(args['meal_items'])} for {args['meal_type']} on {args['meal_date']}"
+    else:
+        exercises = ", ".join(a['name'] for a in args['workout_activities'])
+        return f"You did {args['workout_type']} on {args['workout_date']} with: {exercises}"
+    
+def log_meal_from_pending(user, data):
+    username = user["username"]
+    last_message_id = user["last_message_id"]
+    date = convertISOtoDateTimeObject(data["meal_date"])
+    meals.insert_one({
+        "username": username,
+        "meal_date": date,
+        "meal_type": data["meal_type"],
+        "meal_items": data["meal_items"]
+    })
+    users.update_one({"username": username}, {"$unset": {"pending_log": ""}})
+
+
+    system_instructions = """
+    You are GymBro, an AI personal trainer and nutritionist.
+    You have just logged a workout for the user
+    """
+
+    response = client.responses.create(
+        input="yes",
+        model="gpt-4o-mini",
+        instructions=system_instructions,
+        previous_response_id=last_message_id,
+        store=True
+    )
+
+    return response
+
+def log_workout_from_pending(user, data):
+    username = user["username"]
+    last_message_id = user["last_message_id"]
+    date = convertISOtoDateTimeObject(data["workout_date"])
+    workouts.insert_one({
+        "username": username,
+        "workout_date": date,
+        "workout_type": data["workout_type"],
+        "workout_activities": data["workout_activities"],
+        "notes": data.get("notes")
+    })
+
+    users.update_one({"username": username}, {"$unset": {"pending_log": ""}})
+
+    system_instructions = """
+    You are GymBro, an AI personal trainer and nutritionist.
+    You have just logged a workout for the user
+    """
+
+    response = client.responses.create(
+        input="yes",
+        model="gpt-4o-mini",
+        instructions=system_instructions,
+        previous_response_id=last_message_id,
+        store=True
+    )
+
+
+    return response
+
 
 
 
