@@ -1,4 +1,5 @@
 import os
+import json
 from flask import Blueprint, request, jsonify
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -38,6 +39,8 @@ def chat():
         return jsonify({"error": "User not found"}), 404
     
     classification = classify_message(user, user_message)
+
+    print(classification)
     
     try:
         if classification == "nutrition":
@@ -68,6 +71,31 @@ def classify_message(user, message):
 
     last_message_id = user.get("last_message_id", "")
 
+    classification_tool = [{
+        "type": "function",
+        "name": "user_message_classification",
+        "description": "Classifies a user message into one of the categories: workout, nutrition, action, or other.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "user_message": {
+                    "type": "string",
+                    "description": "The message input from the user that needs to be classified."
+                },
+                "classification": {
+                    "type": "string",
+                    "description": "The classification of the user message.",
+                    "enum": ["workout", "nutrition", "action", "other"]
+                }
+            },
+            "required": ["user_message", "classification"],
+            "additionalProperties": False
+        },
+        "strict": True
+    }]
+
+    
+
     try:
         classification_prompt = f"""
         Classify the following message into one of the categories: "nutrition", "workout", or "other".
@@ -80,7 +108,9 @@ def classify_message(user, message):
                 model="gpt-4o-mini",
                 input=message,
                 instructions=classification_prompt,
-                store=True
+                store=True,
+                tools=classification_tool,
+                tool_choice={"type": "function", "name": "user_message_classification"}
             )
 
         else:
@@ -89,10 +119,18 @@ def classify_message(user, message):
                 input=message,
                 instructions=classification_prompt,
                 previous_response_id=last_message_id,
-                store=True
+                store=True,
+                tools=classification_tool,
+                tool_choice={"type": "function", "name": "user_message_classification"}
             )
 
-        return response.output_text
+
+        tool_call =  response.output[0]
+        args = json.loads(tool_call.arguments)
+
+        classification = args["classification"]
+
+        return classification
 
     except Exception as e:
         raise RuntimeError("OpenAI request failed") from e

@@ -7,8 +7,8 @@ export default function Navbar() {
   const { isAuthenticated, setAuthenticated } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    removeLastMessageID();
+  const handleLogout = async () => {
+    await removeLastMessageID();
     setAuthenticated(false);
     logout();
     navigate("/login");
