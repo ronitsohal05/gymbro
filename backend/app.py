@@ -1,15 +1,13 @@
 import os
-from flask import Flask, request, jsonify
+from flask import Flask
 from flask_cors import CORS
 from config import Config
-from services.db import get_user_collection
 from routes.auth import auth_bp
 from routes.gymbro import gymbro_bp
 from routes.profile import profile_bp
 from routes.logging import logging_bp
 from flask_jwt_extended import JWTManager
 
-from openai import OpenAI
 from datetime import datetime, timedelta
 def create_app():
 

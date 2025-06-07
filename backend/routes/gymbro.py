@@ -1,18 +1,21 @@
-import os
+import base64
 import json
 from flask import Blueprint, request, jsonify
 from openai import OpenAI
+from elevenlabs.client import ElevenLabs
 from dotenv import load_dotenv
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from services.db import get_user_collection, get_meal_collection, get_workout_collection
 from datetime import datetime, timedelta
+from config import Config
 
 
 gymbro_bp = Blueprint("gymbro", __name__)
 
 load_dotenv()
-API_KEY = os.getenv("OPENAI_API_KEY")
-client = OpenAI(api_key=API_KEY)
+client = OpenAI(api_key=Config.OPENAI_API_KEY)
+
+elevenlabs = ElevenLabs(api_key=Config.EL_API_KEY)
 
 users = get_user_collection()
 meals = get_meal_collection()
@@ -63,7 +66,19 @@ def chat():
 
         reply = response.output_text
 
-        return jsonify({ "reply": reply })
+        audio = elevenlabs.text_to_speech.convert(
+            text=reply,
+            voice_id="TX3LPaxmHKxFdv7VOQHJ",
+            model_id="eleven_turbo_v2",
+        )
+
+        audio_bytes = b"".join(audio)
+        audio_base64 = base64.b64encode(audio_bytes).decode("utf-8")
+
+        return jsonify({
+            "reply": reply,
+            "audio_base64": audio_base64
+        })
 
     except RuntimeError as err:
         return jsonify({ "error": str(err) }), 500

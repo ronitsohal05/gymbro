@@ -69,6 +69,19 @@ function ChatWindow() {
     try {
       const res = await chat(trimmed);
       const reply = res.data.reply || "Sorry, no reply.";
+
+      if (res.data.audio_base64) {
+        const audioData = res.data.audio_base64;
+        const byteCharacters = atob(audioData);
+        const byteArray = new Uint8Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteArray[i] = byteCharacters.charCodeAt(i);
+        }
+        const audioBlob = new Blob([byteArray], { type: "audio/mpeg" });
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        audio.play();
+      }
       setMessages((prev) => [...prev, { from: "bot", text: reply }]);
     } catch (err) {
       console.error(err);

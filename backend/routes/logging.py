@@ -85,8 +85,6 @@ def logs_by_date():
         all_meals = meals.find({"username": username}, {"meal_date": 1})
         all_workouts = workouts.find({"username": username}, {"workout_date": 1})
 
-        print(all_meals, all_workouts)
-
         highlights = {}
 
         for m in all_meals:
