@@ -77,18 +77,18 @@ def classify_message(user, message):
     classification_tool = [{
         "type": "function",
         "name": "user_message_classification",
-        "description": "Classifies a user message into one of the categories: workout, nutrition, log meal/workout, or other.",
+        "description": "Classifies a user's message into one of the categories.",
         "parameters": {
             "type": "object",
             "properties": {
                 "user_message": {
                     "type": "string",
-                    "description": "The message input from the user that needs to be classified."
+                    "description": "The message input from the user."
                 },
                 "classification": {
                     "type": "string",
-                    "description": "The classification of the user message.",
-                    "enum": ["workout", "nutrition", "log meal/workout", "other"]
+                    "description": "The classification of the user's message.",
+                    "enum": ["log meal/workout", "nutrition", "workout", "other"]
                 }
             },
             "required": ["user_message", "classification"],
@@ -100,11 +100,16 @@ def classify_message(user, message):
     
 
     try:
-        classification_prompt = f"""
-        Classify the following message into one of the categories: "nutrition", "workout", "log gym/workout" or "other".
+        classification_prompt = """
+            You are a helpful assistant that classifies user messages into one of these categories:
+            - "log meal/workout": The user is reporting details of something they *already did*, such as eating a meal or completing a workout. Examples: "I just had chicken and rice", "Did legs and core today", or "Yes, that's correct" (if confirming a previously extracted log).
+            - "nutrition": The user is asking for advice, facts, or help related to food, diet, or meal planning.
+            - "workout": The user is asking for advice, facts, or help related to exercise routines, fitness plans, or training tips.
+            - "other": Anything that doesn’t fit into the above.
 
-        Respond with only the category name.
+            Respond with just one of the following: "log meal/workout", "nutrition", "workout", or "other".
         """.strip()
+
 
         if last_message_id == "":
             response = client.responses.create(
@@ -302,7 +307,7 @@ def handle_logging_request(user, message):
     pending_log = user.get("pending_log")
 
     if pending_log:
-        if message.lower() in ["yes", "confirm", "log it", "submit"]:
+        if is_affirmative_confirmation(message):
             log_type = pending_log.get("type")
             log_data = pending_log.get("data")
 
@@ -314,6 +319,31 @@ def handle_logging_request(user, message):
             return regenerate_proposal(user, message)
 
     return handle_new_logging_message(user, message)
+
+def is_affirmative_confirmation(message):
+    try:
+        prompt = f"""
+        You are a helpful assistant. Your job is to determine if the following user message is an affirmation or confirmation of a prior suggestion or statement.
+
+        Message: "{message}"
+
+        Respond with only one word: "yes" or "no".
+        """.strip()
+
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": prompt}
+            ],
+            temperature=0,
+            max_tokens=1
+        )
+
+        classification = response.choices[0].message.content.strip().lower()
+        return classification == "yes"
+    
+    except Exception as e:
+        raise RuntimeError("LLM confirmation check failed") from e
 
 def handle_new_logging_message(user, message):
 
@@ -440,7 +470,7 @@ def handle_new_logging_message(user, message):
 
         Instead:
         - Summarize the proposed log to the user in natural language.
-        - Ask them to confirm it (e.g., “Does this look right? Type 'yes' to confirm or send changes.”).
+        - Ask them to confirm it
         - Wait for their confirmation before proceeding.
 
         DO NOT say that anything has been saved or logged at this point
