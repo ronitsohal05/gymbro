@@ -14,7 +14,6 @@ class Config:
 
     # OpenAI 
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-    ALLINONE_ASSISTANT_ID = os.getenv("ALLINONE_ASSISTANT_ID", "")
 
     # ElevenLavbs
     EL_API_KEY = os.getenv("ELEVENLABS_API_KEY", "")

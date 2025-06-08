@@ -7,6 +7,7 @@ import LogWorkoutPage from "./logpages/LogWorkoutPage";
 import LogMealPage from "./logpages/LogMealPage";
 import DashboardPage from "./userpages/DashboardPage";
 import Navbar from "./Navbar";
+import LandingPage from "./LandingPage";
 import { AuthContext } from "./contexts/AuthContext";
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
     <Router>
       <Navbar />
       <Routes>
+        <Route path="/" element={<LandingPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/login" element={<LoginPage />} />
         
