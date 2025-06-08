@@ -248,7 +248,7 @@ export default function SignupPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
                         <label htmlFor="height" className="block text-sm font-medium text-slate-300 mb-1">
-                          Height (cm)
+                          Height (in)
                         </label>
                         <input
                           id="height"
@@ -260,13 +260,13 @@ export default function SignupPage() {
                           value={height}
                           onChange={(e) => setHeight(e.target.value)}
                           className="appearance-none block w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                          placeholder="Your height in cm"
+                          placeholder="Your height in inches"
                         />
                       </div>
 
                       <div>
                         <label htmlFor="weight" className="block text-sm font-medium text-slate-300 mb-1">
-                          Weight (kg)
+                          Weight (lbs)
                         </label>
                         <input
                           id="weight"
@@ -278,7 +278,7 @@ export default function SignupPage() {
                           value={weight}
                           onChange={(e) => setWeight(e.target.value)}
                           className="appearance-none block w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                          placeholder="Your weight in kg"
+                          placeholder="Your weight in lbs"
                         />
                       </div>
                     </div>
@@ -287,23 +287,19 @@ export default function SignupPage() {
                       <label htmlFor="goal" className="block text-sm font-medium text-slate-300 mb-1">
                         Fitness Goal
                       </label>
-                      <select
+                      <input
                         id="goal"
                         name="goal"
+                        type="text"
                         required
                         value={goal}
                         onChange={(e) => setGoal(e.target.value)}
                         className="appearance-none block w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                      >
-                        <option value="" disabled>
-                          Select your primary goal
-                        </option>
-                        <option value="weight_loss">Weight Loss</option>
-                        <option value="muscle_gain">Muscle Gain</option>
-                        <option value="strength">Strength Training</option>
-                        <option value="endurance">Endurance</option>
-                        <option value="general_fitness">General Fitness</option>
-                      </select>
+                        placeholder="Describe your fitness goal (e.g., lose 20 pounds, run a marathon, build muscle)"
+                      />
+                      <p className="text-xs text-slate-400 mt-1">
+                        Be specific about what you want to achieve with your fitness journey
+                      </p>
                     </div>
 
                     <div className="pt-4 flex justify-between">

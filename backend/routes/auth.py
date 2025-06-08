@@ -48,7 +48,6 @@ def signup():
         "weight": weight,
         "height": height,
         "goal": goal,
-        "message_threads" : []
     })
 
     return jsonify({"msg": "User created"}), 201
