@@ -42,3 +42,14 @@ GymBro is an AI-powered fitness and nutrition assistant designed to help users p
 - “What should I eat post-workout to recover faster?”
 
 - "How many calories was the meal i ate for breakfast last Tuesday?"
+
+## Pictures
+
+Landing Page:
+![alt text](image.png)
+
+Dashboard:
+![alt text](project_pictures/image2.png)
+
+Voice Agent:
+![alt text](project_pictures/image1.png)
