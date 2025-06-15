@@ -8,6 +8,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from services.db import get_user_collection, get_meal_collection, get_workout_collection
 from datetime import datetime, timedelta
 from config import Config
+import requests
 
 
 gymbro_bp = Blueprint("gymbro", __name__)
@@ -20,6 +21,32 @@ elevenlabs = ElevenLabs(api_key=Config.EL_API_KEY)
 users = get_user_collection()
 meals = get_meal_collection()
 workouts = get_workout_collection()
+
+@gymbro_bp.route("/session", methods=["GET"])
+@jwt_required()
+def create_realtime_session():
+    try:
+        res = requests.post(
+            "https://api.openai.com/v1/realtime/sessions",
+            headers={
+                "Authorization": f"Bearer {Config.OPENAI_API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "gpt-4o-realtime-preview-2025-06-03",
+                "voice": "echo"  # You can change to 'nova', 'shimmer', or 'verse' too
+            },
+            timeout=10
+        )
+        
+        if res.status_code != 200:
+            return jsonify({ "error": "Failed to create OpenAI realtime session", "details": res.text }), 500
+
+        session_data = res.json()
+        return jsonify(session_data)
+
+    except Exception as e:
+        return jsonify({ "error": str(e) }), 500
 
 
 @gymbro_bp.route("/chat", methods=["POST"])

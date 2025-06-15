@@ -79,6 +79,10 @@ export async function removeLastMessageID() {
   return client.post("/gymbro/reset")
 }
 
+export async function sessionId() {
+  return client.get("/gymbro/session")
+}
+
 //Logging endpoitns
 export async function logMeal(payload) {
   return client.post("/log/meal", payload);

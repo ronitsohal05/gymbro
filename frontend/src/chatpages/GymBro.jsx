@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react"
-import { chat } from "../services/api"
+import { sessionId } from "../services/api"
 import { Mic, MicOff, Volume2 } from "lucide-react"
 
 export default function Gymbro() {
@@ -10,9 +10,111 @@ export default function Gymbro() {
   const [lastResponse, setLastResponse] = useState("Hello! I'm your AI fitness coach. Tap the center to start talking.")
   const [transcript, setTranscript] = useState("")
 
-  const recognitionRef = useRef(null)
-  const audioRef = useRef(null)
+  const recognitionRef = useRef(null);
 
+  const pcRef = useRef(null);
+  const dcRef = useRef(null);
+  const audioElRef = useRef(null);
+  const audioRef = useRef(null);
+
+  const isInitializedRef = useRef(false);
+
+  async function initWebRTC() {
+
+    if (isInitializedRef.current) return;
+    isInitializedRef.current = true;
+
+
+    const tokenResponse = await sessionId();
+    const EPHEMERAL_KEY = tokenResponse.data.client_secret.value;
+    
+
+    const pc = new RTCPeerConnection();
+    pcRef.current = pc;
+
+    // Handle audio stream from assistant
+    pc.ontrack = (event) => {
+      const audioEl = audioElRef.current;
+      if (audioEl && event.streams[0]) {
+      audioEl.srcObject = event.streams[0];
+      audioEl.onplay = () => {
+        setIsSpeaking(true);
+      };
+      audioEl.onended = () => {
+        setIsSpeaking(false);
+        setIsProcessing(false);
+      };
+      audioEl.play(); // make sure it starts playing
+    }
+    };
+
+    // Get mic input
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+
+    // Setup DataChannel to send/receive messages
+    const dc = pc.createDataChannel("oai-events");
+    dcRef.current = dc;
+
+    dc.addEventListener("message", (e) => {
+      const data = JSON.parse(e.data);
+      if (data.type === "assistant") {
+        setLastResponse(data.content);
+      }
+    });
+
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+
+    const model = "gpt-4o-realtime-preview-2025-06-03";
+    const sdpResponse = await fetch(`https://api.openai.com/v1/realtime?model=${model}`, {
+      method: "POST",
+      body: offer.sdp,
+      headers: {
+        Authorization: `Bearer ${EPHEMERAL_KEY}`,
+        "Content-Type": "application/sdp"
+      },
+    });
+
+    const answer = {
+      type: "answer",
+      sdp: await sdpResponse.text(),
+    };
+
+    await pc.setRemoteDescription(answer);
+  }
+
+  useEffect(() => {
+    return () => {
+      if (pcRef.current) {
+        pcRef.current.close();
+        pcRef.current = null;
+      }
+      if (dcRef.current) {
+        dcRef.current.close();
+        dcRef.current = null;
+      }
+      setIsListening(false);
+      setIsSpeaking(false);
+      setIsProcessing(false);
+    };
+  }, []);
+
+  const sendMessage = (message) => {
+    if (!message.trim()) return;
+    setIsProcessing(true);
+
+    try {
+      dcRef.current?.send(JSON.stringify({ type: "user", content: message }));
+      setCurrentMessage("");
+      setTranscript("");
+    } catch (err) {
+      console.error("Error sending via WebRTC:", err);
+      setLastResponse("Something went wrong. Try again.");
+    }
+  };
+
+  
   // Set up SpeechRecognition
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
@@ -47,8 +149,9 @@ export default function Gymbro() {
       setTranscript(finalTranscript || interimTranscript)
 
       if (finalTranscript) {
-        setCurrentMessage(finalTranscript)
-        sendMessage(finalTranscript)
+        setCurrentMessage(finalTranscript);
+        recognition.stop();
+        sendMessage(finalTranscript);
       }
     }
 
@@ -66,8 +169,9 @@ export default function Gymbro() {
     }
 
     recognitionRef.current = recognition
-  }, [])
+  }, [isProcessing])
 
+  /*
   const sendMessage = async (message) => {
     if (!message.trim()) return
 
@@ -114,26 +218,39 @@ export default function Gymbro() {
     }
   }
 
-  const toggleListening = () => {
+  */
+
+  const toggleListening = async () => {
     if (!recognitionRef.current) return
 
-    if (isListening) {
-      recognitionRef.current.stop()
-    } else if (!isProcessing && !isSpeaking) {
-      recognitionRef.current.start()
+    if (!pcRef.current) {
+      await initWebRTC(); // lazy init
+    }
+
+    try {
+      if (!isListening && !isProcessing && !isSpeaking) {
+        recognitionRef.current.start();
+      } else {
+        recognitionRef.current.stop();
+      }
+    } catch (err) {
+      console.error("Speech toggle error:", err);
     }
   }
 
   const stopSpeaking = () => {
     if (audioRef.current) {
-      audioRef.current.pause()
-      audioRef.current.currentTime = 0
-      setIsSpeaking(false)
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      setIsSpeaking(false);
     }
-  }
+  };
+
+  
 
   return (
     <div className="flex flex-col h-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
+      <audio ref={audioElRef} autoPlay hidden />
       {/* Background Effects */}
       <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-blue-500/5"></div>
       <div className="absolute inset-0">
