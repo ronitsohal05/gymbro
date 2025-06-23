@@ -80,6 +80,7 @@ export async function removeLastMessageID() {
 }
 
 export async function sessionId() {
+  console.log("Calling sessionId API")
   return client.get("/gymbro/session")
 }
 

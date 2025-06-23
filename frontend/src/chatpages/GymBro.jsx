@@ -1,73 +1,45 @@
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef } from "react"
 import { sessionId } from "../services/api"
 import { Mic, MicOff, Volume2 } from "lucide-react"
 
 export default function Gymbro() {
-  const [isListening, setIsListening] = useState(false)
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [isSpeaking, setIsSpeaking] = useState(false)
-  const [currentMessage, setCurrentMessage] = useState("")
-  const [lastResponse, setLastResponse] = useState("Hello! I'm your AI fitness coach. Tap the center to start talking.")
-  const [transcript, setTranscript] = useState("")
+  const [status, setStatus] = useState("Click to start conversation")
 
-  const recognitionRef = useRef(null);
-
-  const pcRef = useRef(null);
-  const dcRef = useRef(null);
-  const audioElRef = useRef(null);
   const audioRef = useRef(null);
+  const pcRef = useRef(null);
+  const streamRef = useRef(null);
+  
+  async function init() {
 
-  const isInitializedRef = useRef(false);
-
-  async function initWebRTC() {
-
-    if (isInitializedRef.current) return;
-    isInitializedRef.current = true;
-
+    setStatus("Initializing...");
 
     const tokenResponse = await sessionId();
     const EPHEMERAL_KEY = tokenResponse.data.client_secret.value;
-    
 
     const pc = new RTCPeerConnection();
     pcRef.current = pc;
 
-    // Handle audio stream from assistant
-    pc.ontrack = (event) => {
-      const audioEl = audioElRef.current;
-      if (audioEl && event.streams[0]) {
-      audioEl.srcObject = event.streams[0];
-      audioEl.onplay = () => {
-        setIsSpeaking(true);
-      };
-      audioEl.onended = () => {
-        setIsSpeaking(false);
-        setIsProcessing(false);
-      };
-      audioEl.play(); // make sure it starts playing
-    }
-    };
+    const audioEl = document.createElement("audio");
+    audioEl.autoplay = true;
+    pc.ontrack = e => audioEl.srcObject = e.streams[0];
 
-    // Get mic input
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+    const ms = await navigator.mediaDevices.getUserMedia({
+      audio: true
+    });
+    streamRef.current = ms;
+    pc.addTrack(ms.getTracks()[0]);
 
-    // Setup DataChannel to send/receive messages
-    const dc = pc.createDataChannel("oai-events");
-    dcRef.current = dc;
-
+    const dc = pc.createDataChannel("oadi-events");
     dc.addEventListener("message", (e) => {
-      const data = JSON.parse(e.data);
-      if (data.type === "assistant") {
-        setLastResponse(data.content);
-      }
+      console.log(e);
     });
 
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
 
+    const baseUrl = "https://api.openai.com/v1/realtime";
     const model = "gpt-4o-realtime-preview-2025-06-03";
-    const sdpResponse = await fetch(`https://api.openai.com/v1/realtime?model=${model}`, {
+    const sdpResponse = await fetch(`${baseUrl}?model=${model}`, {
       method: "POST",
       body: offer.sdp,
       headers: {
@@ -80,96 +52,26 @@ export default function Gymbro() {
       type: "answer",
       sdp: await sdpResponse.text(),
     };
-
     await pc.setRemoteDescription(answer);
+
+    setStatus("Conversation started!");
   }
 
-  useEffect(() => {
-    return () => {
-      if (pcRef.current) {
-        pcRef.current.close();
-        pcRef.current = null;
-      }
-      if (dcRef.current) {
-        dcRef.current.close();
-        dcRef.current = null;
-      }
-      setIsListening(false);
-      setIsSpeaking(false);
-      setIsProcessing(false);
-    };
-  }, []);
-
-  const sendMessage = (message) => {
-    if (!message.trim()) return;
-    setIsProcessing(true);
-
-    try {
-      dcRef.current?.send(JSON.stringify({ type: "user", content: message }));
-      setCurrentMessage("");
-      setTranscript("");
-    } catch (err) {
-      console.error("Error sending via WebRTC:", err);
-      setLastResponse("Something went wrong. Try again.");
-    }
-  };
-
-  
-  // Set up SpeechRecognition
-  useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-    if (!SpeechRecognition) {
-      console.error("Speech Recognition is not supported in this browser.")
-      return
+  function endConversation() {
+    if (pcRef.current) {
+      pcRef.current.close();
+      pcRef.current = null;
     }
 
-    const recognition = new SpeechRecognition()
-    recognition.lang = "en-US"
-    recognition.interimResults = true
-    recognition.continuous = false
-
-    recognition.onstart = () => {
-      setIsListening(true)
-      setTranscript("")
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => {
+        track.stop();
+      });
+      streamRef.current = null;
     }
 
-    recognition.onresult = (event) => {
-      let interimTranscript = ""
-      let finalTranscript = ""
-
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript
-        if (event.results[i].isFinal) {
-          finalTranscript += transcript
-        } else {
-          interimTranscript += transcript
-        }
-      }
-
-      setTranscript(finalTranscript || interimTranscript)
-
-      if (finalTranscript) {
-        setCurrentMessage(finalTranscript);
-        recognition.stop();
-        sendMessage(finalTranscript);
-      }
-    }
-
-    recognition.onerror = (event) => {
-      console.error("Speech recognition error:", event.error)
-      setIsListening(false)
-      setIsProcessing(false)
-    }
-
-    recognition.onend = () => {
-      setIsListening(false)
-      if (!isProcessing) {
-        setTranscript("")
-      }
-    }
-
-    recognitionRef.current = recognition
-  }, [isProcessing])
+    setStatus("Conversation ended");
+  }
 
   /*
   const sendMessage = async (message) => {
@@ -220,133 +122,27 @@ export default function Gymbro() {
 
   */
 
-  const toggleListening = async () => {
-    if (!recognitionRef.current) return
-
-    if (!pcRef.current) {
-      await initWebRTC(); // lazy init
-    }
-
-    try {
-      if (!isListening && !isProcessing && !isSpeaking) {
-        recognitionRef.current.start();
-      } else {
-        recognitionRef.current.stop();
-      }
-    } catch (err) {
-      console.error("Speech toggle error:", err);
-    }
-  }
-
-  const stopSpeaking = () => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-      setIsSpeaking(false);
-    }
-  };
-
   
-
   return (
-    <div className="flex flex-col h-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
-      <audio ref={audioElRef} autoPlay hidden />
-      {/* Background Effects */}
-      <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-blue-500/5"></div>
-      <div className="absolute inset-0">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
-      </div>
-
-      {/* Main Interface */}
-      <div className="flex-1 flex flex-col items-center justify-center relative z-10 p-8">
-        {/* Status Display */}
-        <div className="mb-8 text-center max-w-2xl">
-          <h2 className="text-2xl font-bold text-white mb-4">
-            {isListening ? "Listening..." : isProcessing ? "Processing..." : isSpeaking ? "Speaking..." : "Ready"}
-          </h2>
-
-          {/* Current transcript or last response */}
-          <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-lg p-6 min-h-[120px] flex items-center justify-center">
-            <p className="text-slate-300 text-lg leading-relaxed text-center">
-              {transcript || currentMessage || lastResponse}
-            </p>
-          </div>
-        </div>
-
-        {/* Central Jarvis Interface */}
-        <div className="relative mb-8">
-          {/* Outer Ring */}
-          <div
-            className={`w-80 h-80 rounded-full border-2 transition-all duration-300 ${
-              isListening
-                ? "border-red-500 shadow-lg shadow-red-500/50 animate-pulse"
-                : isProcessing
-                  ? "border-yellow-500 shadow-lg shadow-yellow-500/50 animate-spin"
-                  : isSpeaking
-                    ? "border-green-500 shadow-lg shadow-green-500/50 animate-pulse"
-                    : "border-cyan-500 shadow-lg shadow-cyan-500/50"
-            } flex items-center justify-center`}
-          >
-            {/* Inner Circle */}
-            <button
-              onClick={isSpeaking ? stopSpeaking : toggleListening}
-              disabled={isProcessing}
-              className={`w-64 h-64 rounded-full transition-all duration-300 flex items-center justify-center ${
-                isListening
-                  ? "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
-                  : isProcessing
-                    ? "bg-gradient-to-r from-yellow-500 to-yellow-600 cursor-not-allowed"
-                    : isSpeaking
-                      ? "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
-                      : "bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
-              } shadow-2xl transform hover:scale-105 active:scale-95`}
-            >
-              {isListening ? (
-                <MicOff className="w-16 h-16 text-white" />
-              ) : isProcessing ? (
-                <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
-              ) : isSpeaking ? (
-                <Volume2 className="w-16 h-16 text-white animate-pulse" />
-              ) : (
-                <Mic className="w-16 h-16 text-white" />
-              )}
-            </button>
-          </div>
-
-          {/* Pulse Effect */}
-          {(isListening || isSpeaking) && (
-            <div className="absolute inset-0 rounded-full border-2 border-cyan-500 animate-ping opacity-20"></div>
-          )}
-        </div>
-
-        {/* Instructions */}
-        <div className="text-center max-w-md">
-          <p className="text-slate-400 mb-2">
-            {isListening
-              ? "Speak now... Tap again to stop"
-              : isProcessing
-                ? "Processing your request..."
-                : isSpeaking
-                  ? "Tap to stop speaking"
-                  : "Tap the center to start voice conversation"}
-          </p>
-          <p className="text-slate-500 text-sm">Ask me about workouts, nutrition, or any fitness questions</p>
-        </div>
-      </div>
-
-      {/* Audio Visualizer Effect */}
-      {(isListening || isSpeaking) && (
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-1">
-          {[...Array(5)].map((_, i) => (
-            <div
-              key={i}
-              className={`w-1 bg-cyan-500 rounded-full animate-pulse ${isListening ? "h-8" : "h-4"}`}
-              style={{ animationDelay: `${i * 0.1}s` }}
-            ></div>
-          ))}
-        </div>
+    <div className="flex flex-col items-center justify-center h-screen bg-slate-900 text-white">
+      <audio ref={audioRef} autoPlay hidden />
+      <h1 className="text-2xl font-bold mb-4">{status}</h1>
+      {(status === "Click to start conversation" || status === "Conversation ended") && (
+        <button
+          onClick={init}
+          className="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-all duration-200"
+        >
+          Start Talking to AI
+        </button>
+      )}
+      {status === "Conversation started!" && (
+        <button
+          onClick={endConversation}
+          className="mt-4 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded"
+        >
+          End Conversation
+        </button>
       )}
     </div>
-  )
+  );
 }
