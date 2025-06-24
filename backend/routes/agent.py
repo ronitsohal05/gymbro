@@ -12,6 +12,9 @@ users = get_user_collection()
 meals = get_meal_collection()
 workouts = get_workout_collection()
 
+def convertISOtoDateTimeObject(iso_string):
+    return datetime.fromisoformat(iso_string.replace("Z", "+00:00"))
+
 @agent_bp.route("/nutrition_advice", methods=["GET"])
 @jwt_required()
 def nutrition_advice():
@@ -101,3 +104,18 @@ def workout_advice():
     
 
     return jsonify({"log": workout_logs.strip()})
+
+@agent_bp.route("/log_meal", methods=["POST"])
+@jwt_required()
+def agent_log_meal():
+    data = request.get_json()
+    print(data)
+    username = get_jwt_identity()
+    date = convertISOtoDateTimeObject(data.get("date"))
+    type = data.get("type")
+    items = data.get("items", [])
+    if not date or not items:
+        return jsonify({"error": "Date and items are required"}), 400
+
+    meals.insert_one({ "username": username, "meal_date": date, "meal_type": type, "meal_items": items })
+    return jsonify({ "msg": "Meal logged successfully" }), 200

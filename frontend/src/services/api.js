@@ -114,4 +114,8 @@ export async function getWorkoutLogs() {
   return client.get("/agent/workout_advice")
 }
 
+export async function agentLogMeal(payload) {
+  return client.post("/agent/log_meal", payload); 
+}
+
 export default client;

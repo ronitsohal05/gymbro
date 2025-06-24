@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react"
-import { getNutritionLogs, getWorkoutLogs, sessionId } from "../services/api"
+import { getNutritionLogs, getWorkoutLogs, agentLogMeal, sessionId } from "../services/api"
 import { Mic, MicOff } from "lucide-react"
 
 export default function RealtimeTemplate() {
@@ -47,7 +47,37 @@ export default function RealtimeTemplate() {
         type: "object",
         properties: {}
       }
+    },
+    {
+      "type": "function",
+      "name": "log_meal",
+      "description": "Logs a user's meal with timestamp, meal type, and food items consumed",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp string indicating when the meal was consumed"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["breakfast", "lunch", "dinner", "snack", "other"],
+            "description": "Type of meal being logged"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Array of food items consumed in the meal",
+            "minItems": 1
+          }
+        },
+        "required": ["date", "mealType", "filteredItems"]
+      }
     }
+    
   ];
 
   // Function implementations
@@ -81,6 +111,28 @@ export default function RealtimeTemplate() {
 
         return {
           result: response.data.log
+        };
+      } catch (error) {
+        return {
+          error: error.message
+        };
+      }
+    },
+    log_meal: async (args) => {
+      try {
+        const { date, type, items } = JSON.parse(args);
+        
+        const payload = {
+          date,
+          type,
+          items
+        };
+        
+        const response = await agentLogMeal(payload);
+        console.log(response);
+        
+        return {
+          result: response.data
         };
       } catch (error) {
         return {
