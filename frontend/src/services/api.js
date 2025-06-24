@@ -100,10 +100,14 @@ export async function getLogsByDate(date = null) {
 
 }
 
-
 //profile endpoints
 export async function getUserStats() {
   return client.get("/profile/stats");
+}
+
+//voice agent endpoints
+export async function getNutritionLogs() {
+  return client.get("/agent/nutrition_advice")
 }
 
 export default client;
