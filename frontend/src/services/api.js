@@ -110,4 +110,8 @@ export async function getNutritionLogs() {
   return client.get("/agent/nutrition_advice")
 }
 
+export async function getWorkoutLogs() {
+  return client.get("/agent/workout_advice")
+}
+
 export default client;

@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react"
-import { getNutritionLogs, sessionId } from "../services/api"
+import { getNutritionLogs, getWorkoutLogs, sessionId } from "../services/api"
 import { Mic, MicOff } from "lucide-react"
 
 export default function RealtimeTemplate() {
@@ -38,6 +38,15 @@ export default function RealtimeTemplate() {
         type: "object",
         properties: {}
       }
+    },
+    {
+      type: "function",
+      name: "get_workout_logs",
+      description: "In order to advice the user well nutritionally you can fetch the user's workout logs from the past 7 days in formatted text.",
+      parameters: {
+        type: "object",
+        properties: {}
+      }
     }
   ];
 
@@ -52,6 +61,21 @@ export default function RealtimeTemplate() {
     get_nutrition_logs: async () => {
       try {
         const response = await getNutritionLogs();
+        console.log(response);
+      
+
+        return {
+          result: response.data.log
+        };
+      } catch (error) {
+        return {
+          error: error.message
+        };
+      }
+    }, 
+    get_workout_logs: async () => {
+      try {
+        const response = await getWorkoutLogs();
         console.log(response);
       
 

@@ -6,7 +6,7 @@ from routes.auth import auth_bp
 from routes.gymbro import gymbro_bp
 from routes.profile import profile_bp
 from routes.logging import logging_bp
-from routes.gymbro_functions.advice import agent_bp
+from routes.agent import agent_bp
 from flask_jwt_extended import JWTManager
 
 from datetime import datetime, timedelta
