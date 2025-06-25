@@ -118,4 +118,8 @@ export async function agentLogMeal(payload) {
   return client.post("/agent/log_meal", payload); 
 }
 
+export async function agentLogWorkout(payload) {
+  return client.post("/agent/log_workout", payload); 
+}
+
 export default client;

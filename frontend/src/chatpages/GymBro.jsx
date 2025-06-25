@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react"
-import { getNutritionLogs, getWorkoutLogs, agentLogMeal, sessionId } from "../services/api"
+import { getNutritionLogs, getWorkoutLogs, agentLogMeal, agentLogWorkout, sessionId } from "../services/api"
 import { Mic, MicOff } from "lucide-react"
 
 export default function RealtimeTemplate() {
@@ -76,6 +76,91 @@ export default function RealtimeTemplate() {
         },
         "required": ["date", "mealType", "filteredItems"]
       }
+    },
+
+    {
+      "type": "function",
+      "name": "log_meal",
+      "description": "Logs a user's meal with timestamp, meal type, and food items consumed",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp string indicating when the meal was consumed"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["breakfast", "lunch", "dinner", "snack", "other"],
+            "description": "Type of meal being logged"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Array of food items consumed in the meal",
+            "minItems": 1
+          }
+        },
+        "required": ["date", "type", "items"]
+      }
+    },
+    {
+      "type": "function",
+        "name": "log_workout",
+        "description": "Logs a workout session to the user's account based on what exercises they did.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "The date and time the workout happened, in ISO 8601 format (e.g. 2025-06-05T17:00:00Z). The date rigt now is{current_date}."
+                },
+                "type": {
+                    "type": "string",
+                    "description": "A short description of the workout (e.g., push day, leg day, cardio)."
+                },
+                "activities": {
+                    "type": "array",
+                    "description": "List of exercises performed with details.",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Name of the exercise, e.g., push-ups"
+                            },
+                            "mode": {
+                                "type": "string",
+                                "description": "Tracking method used for the exercise.",
+                                "enum": ["reps", "time"]
+                            },
+                            "sets": {
+                                "type": "integer",
+                                "description": "Number of sets (if mode is 'reps')"
+                            },
+                            "reps": {
+                                "type": "integer",
+                                "description": "Number of reps per set (if mode is 'reps')"
+                            },
+                            "duration": {
+                                "type": "number",
+                                "description": "Duration in minutes (if mode is 'time')"
+                            }
+                        },
+                        "required": ["name", "mode"],
+                    }
+                },
+                "notes": {
+                    "type": "string",
+                    "description": "Optional notes about the workout"
+                }
+            },
+            "required": ["date", "activities", "type"],
+        }
     }
     
   ];
@@ -129,6 +214,28 @@ export default function RealtimeTemplate() {
         };
         
         const response = await agentLogMeal(payload);
+        console.log(response);
+        
+        return {
+          result: response.data
+        };
+      } catch (error) {
+        return {
+          error: error.message
+        };
+      }
+    },
+    log_workout: async (args) => {
+      try {
+        const { date, type, activities, notes} = JSON.parse(args);
+        const payload = {
+          date,
+          type,
+          activities,
+          notes: notes || ""
+        };
+        
+        const response = await agentLogWorkout(payload);
         console.log(response);
         
         return {

@@ -119,3 +119,20 @@ def agent_log_meal():
 
     meals.insert_one({ "username": username, "meal_date": date, "meal_type": type, "meal_items": items })
     return jsonify({ "msg": "Meal logged successfully" }), 200
+
+@agent_bp.route("/log_workout", methods=["POST"])
+@jwt_required()
+def agent_log_workout():
+    data = request.get_json()
+    print(data)
+    username = get_jwt_identity()
+    date = convertISOtoDateTimeObject(data.get("date"))
+    type = data.get("type")
+    activities = data.get("activities")
+    notes = data.get("notes")
+
+    if not date or not activities:
+        return jsonify({"error": "Date and activities are required"}), 400
+
+    workouts.insert_one({ "username": username, "workout_date": date, "workout_type": type, "workout_activities": activities, "notes": notes })
+    return jsonify({ "msg": "Workout logged successfully" }), 200
