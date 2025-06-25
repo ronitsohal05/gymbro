@@ -7,6 +7,7 @@ from routes.gymbro import gymbro_bp
 from routes.profile import profile_bp
 from routes.logging import logging_bp
 from routes.agent import agent_bp
+from routes.pinecone import pinecone_bp
 from flask_jwt_extended import JWTManager
 
 from datetime import datetime, timedelta
@@ -28,6 +29,7 @@ def create_app():
     app.register_blueprint(profile_bp, url_prefix="/profile")
     app.register_blueprint(logging_bp, url_prefix="/log")
     app.register_blueprint(agent_bp, url_prefix="/agent")
+    app.register_blueprint(pinecone_bp, url_prefix="/pinecone")
 
 
 

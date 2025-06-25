@@ -122,4 +122,9 @@ export async function agentLogWorkout(payload) {
   return client.post("/agent/log_workout", payload); 
 }
 
+//rag endpoints
+export async function getContextFromPinecone(query) {
+  return client.post("/pinecone/query", query)
+}
+
 export default client;

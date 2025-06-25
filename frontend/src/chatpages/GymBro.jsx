@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react"
-import { getNutritionLogs, getWorkoutLogs, agentLogMeal, agentLogWorkout, sessionId } from "../services/api"
+import { getNutritionLogs, getWorkoutLogs, agentLogMeal, agentLogWorkout, getContextFromPinecone,sessionId } from "../services/api"
 import { Mic, MicOff } from "lucide-react"
 
 export default function RealtimeTemplate() {
@@ -160,7 +160,22 @@ export default function RealtimeTemplate() {
                 }
             },
             "required": ["date", "activities", "type"],
-        }
+        },
+    },
+    {
+      type: "function",
+      name: "search_knowledge_base",
+      description: "Searches the nutrition and fitness knowledge base using semantic similarity to provide some context while providing answers. Can be used with user logs to provide the best advice.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description: "The user's question or search query"
+          }
+        },
+        required: ["query"]
+      }
     }
     
   ];
@@ -241,6 +256,23 @@ export default function RealtimeTemplate() {
         return {
           result: response.data
         };
+      } catch (error) {
+        return {
+          error: error.message
+        };
+      }
+    },
+    search_knowledge_base: async (args) => {
+      try {
+        const { query } = JSON.parse(args);
+
+        const response = await getContextFromPinecone({ query });
+        console.log(response);
+
+        return {
+          result: response.data.results  
+        };
+
       } catch (error) {
         return {
           error: error.message
@@ -394,6 +426,7 @@ export default function RealtimeTemplate() {
     setConversationHistory([]);
   }
 
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900 text-white p-4">
       <audio ref={audioRef} autoPlay hidden />
@@ -427,17 +460,6 @@ export default function RealtimeTemplate() {
               End Conversation
             </button>
           )}
-        </div>
-
-        {/* Instructions */}
-        <div className="mt-6 bg-slate-800 p-4 rounded-lg text-sm">
-          <h3 className="font-semibold mb-2">Template Ready:</h3>
-          <ul className="space-y-1 text-slate-300">
-            <li>• Add your custom functions to the customFunctions array</li>
-            <li>• Implement your functions in the functionImplementations object</li>
-            <li>• Update the session instructions as needed</li>
-            <li>• The template handles WebRTC connection and function calling automatically</li>
-          </ul>
         </div>
       </div>
     </div>
