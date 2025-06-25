@@ -33,7 +33,7 @@ def create_realtime_session():
                 "Content-Type": "application/json"
             },
             json={
-                "model": "gpt-4o-realtime-preview-2025-06-03",
+                "model": "gpt-4o-realtime-preview",
                 "voice": "echo"  # You can change to 'nova', 'shimmer', or 'verse' too
             },
             timeout=10
