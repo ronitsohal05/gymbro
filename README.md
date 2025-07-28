@@ -5,6 +5,7 @@ GymBro is an AI-powered fitness and nutrition assistant designed to help users p
 ## Features
 
 - **Conversational AI**: Chat with GymBro to get personalized workout or nutrition advice.
+- **Real-Time Speech-to-Speech Mode**: Ongoing development to support fully natural conversations, where GymBro listens and speaks in real-time—no typing required.
 - **Intelligent Classification**: Classifies user input into categories: workout, nutrition, or logging.
 - **Structured Logging**: Extracts and logs structured meal and workout data with user confirmation.
 - **User Authentication**: JWT-secured endpoints using Flask-JWT-Extended.
@@ -28,9 +29,6 @@ GymBro is an AI-powered fitness and nutrition assistant designed to help users p
 - **JWT Authentication**
 
 ## Coming Soon
-
-- **Real-Time Speech-to-Speech Mode**: Ongoing development to support fully natural conversations, where GymBro listens and speaks in real-time—no typing required.
-- **Audio Streaming**: Switch from base64 blobs to streamed audio for lower latency.
 - **Voice Customization**: Let users select different ElevenLabs voices.
 
 ## Example Use Cases
